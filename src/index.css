@@ -1,0 +1,82 @@
+:root {
+  --bg: #fff8f3;
+  --surface: rgba(255, 255, 255, 0.74);
+  --border: rgba(160, 97, 111, 0.16);
+  --ink: #34252d;
+  --muted: #7f6a72;
+  --muted-strong: #66545b;
+  --accent: #b94c64;
+  --accent-strong: #8f233d;
+  --accent-soft: #fff1ea;
+  --shadow-soft:
+    0 24px 60px rgba(155, 86, 95, 0.14),
+    0 8px 18px rgba(138, 73, 82, 0.08);
+  --font-body:
+    'Avenir Next', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    sans-serif;
+  --font-display:
+    'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+
+  font-family: var(--font-body);
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top, rgba(255, 207, 186, 0.7), transparent 38%),
+    radial-gradient(circle at 90% 20%, rgba(231, 156, 82, 0.12), transparent 28%),
+    linear-gradient(180deg, #fff7f1 0%, #fffdfa 48%, #fef1e6 100%);
+  color: var(--ink);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+dl,
+dd {
+  margin: 0;
+}
+
+#root {
+  min-height: 100svh;
+}
