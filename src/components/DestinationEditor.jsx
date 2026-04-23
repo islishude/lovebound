@@ -31,6 +31,8 @@ export function DestinationEditor({
   onDeleteDestination,
   onResetDestinations,
   onUpdateDestination,
+  poolCount,
+  wheelCount,
 }) {
   const [draft, setDraft] = useState(createDraft())
   const [editingId, setEditingId] = useState(null)
@@ -93,7 +95,8 @@ export function DestinationEditor({
         <p className="eyebrow">Destination Editor</p>
         <h2 id="editor-title">把你们真正会考虑的地点塞进转盘里</h2>
         <p>
-          预设可以直接玩，也可以把“真正有机会成行”的城市换成更贴近你们的版本。
+          总库里现在有 {poolCount} 个国内目的地，当前转盘只展示其中 {wheelCount}{' '}
+          个。这里展示的是“当前这一盘”，你可以继续往总库里加自己的私藏地点。
         </p>
       </div>
 
@@ -176,7 +179,7 @@ export function DestinationEditor({
 
             <div className="action-row">
               <button type="submit" className="primary-button" disabled={disabled}>
-                {editingId ? '保存修改' : '加入转盘'}
+                {editingId ? '保存修改' : '加入总库'}
               </button>
 
               {editingId && (
@@ -196,7 +199,7 @@ export function DestinationEditor({
                 onClick={onResetDestinations}
                 disabled={disabled}
               >
-                恢复默认地点
+                恢复默认总库
               </button>
             </div>
           </form>

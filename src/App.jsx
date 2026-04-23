@@ -4,12 +4,21 @@ import { DestinationEditor } from './components/DestinationEditor'
 import { Hero } from './components/Hero'
 import { ResultCard } from './components/ResultCard'
 import { WheelGame } from './components/WheelGame'
-import { DEFAULT_DESTINATIONS } from './data/destinations'
+import {
+  DEFAULT_DESTINATION_POOL,
+  WHEEL_DESTINATION_COUNT,
+} from './data/destinations'
 import {
   loadDestinations,
   resetDestinationsStorage,
   saveDestinations,
 } from './utils/storage'
+import {
+  arrangeWheelDestinations,
+  pickNextWheelDestinations,
+  promoteDestinationToWheel,
+  reconcileWheelDestinationIds,
+} from './utils/destinationPool'
 import {
   MANUAL_SPIN_CYCLE_MS,
   MANUAL_SPIN_DEGREES_PER_SECOND,
@@ -73,9 +82,51 @@ function playRomanceChime(audioContext) {
   })
 }
 
+function getInitialDestinationPool() {
+  return cloneDestinations(loadDestinations(DEFAULT_DESTINATION_POOL))
+}
+
+function getDefaultCityDestinations(pool) {
+  return pool.filter((destination) => destination.id.startsWith('city-'))
+}
+
+function arrangeWheelIds(pool, destinationIds) {
+  const arrangedDestinations = arrangeWheelDestinations(
+    destinationIds
+      .map((destinationId) =>
+        pool.find((destination) => destination.id === destinationId),
+      )
+      .filter(Boolean),
+  )
+
+  return arrangedDestinations.map((destination) => destination.id)
+}
+
+function mapWheelIdsFromPool(pool, currentIds = []) {
+  const pickedDestinations = pickNextWheelDestinations(
+    pool,
+    WHEEL_DESTINATION_COUNT,
+    currentIds,
+  )
+
+  return arrangeWheelDestinations(pickedDestinations).map(
+    (destination) => destination.id,
+  )
+}
+
 function App() {
-  const [destinations, setDestinations] = useState(() =>
-    cloneDestinations(loadDestinations(DEFAULT_DESTINATIONS)),
+  const [destinationPool, setDestinationPool] = useState(getInitialDestinationPool)
+  const [wheelDestinationIds, setWheelDestinationIds] = useState(() =>
+    {
+      const initialPool = getInitialDestinationPool()
+      const defaultCityPool = getDefaultCityDestinations(initialPool)
+
+      return mapWheelIdsFromPool(
+        defaultCityPool.length >= WHEEL_DESTINATION_COUNT
+          ? defaultCityPool
+          : initialPool,
+      )
+    },
   )
   const [isSpinning, setIsSpinning] = useState(false)
   const [isStopping, setIsStopping] = useState(false)
@@ -84,7 +135,7 @@ function App() {
   const [rotation, setRotation] = useState(0)
   const [soundEnabled, setSoundEnabled] = useState(false)
   const [statusMessage, setStatusMessage] = useState(
-    '把下一次出走交给一点心动，今晚先让转盘替你们做第一步。',
+    '总库已经准备了 500+ 个国内目的地，先替你们抽出今晚这一盘。',
   )
 
   const wheelSectionRef = useRef(null)
@@ -95,8 +146,8 @@ function App() {
   const spinBaseRotationRef = useRef(0)
 
   useEffect(() => {
-    saveDestinations(destinations)
-  }, [destinations])
+    saveDestinations(destinationPool)
+  }, [destinationPool])
 
   useEffect(() => {
     return () => {
@@ -114,12 +165,23 @@ function App() {
     }
   }, [])
 
+  const wheelDestinations = wheelDestinationIds
+    .map((destinationId) =>
+      destinationPool.find((destination) => destination.id === destinationId),
+    )
+    .filter(Boolean)
+
   const selectedDestination =
-    destinations.find((destination) => destination.id === selectedDestinationId) ??
+    destinationPool.find((destination) => destination.id === selectedDestinationId) ??
     null
   const confirmedDestination =
-    destinations.find((destination) => destination.id === confirmedDestinationId) ??
+    destinationPool.find((destination) => destination.id === confirmedDestinationId) ??
     null
+
+  function clearSelection() {
+    setSelectedDestinationId(null)
+    setConfirmedDestinationId(null)
+  }
 
   function clearSettleTimer() {
     if (settleTimerRef.current) {
@@ -179,17 +241,33 @@ function App() {
     })
   }
 
+  function handleRotateWheelDestinations() {
+    if (isSpinning || isStopping || destinationPool.length === 0) {
+      return
+    }
+
+    setWheelDestinationIds(mapWheelIdsFromPool(destinationPool, wheelDestinationIds))
+    clearSelection()
+    setRotation(0)
+    setStatusMessage(
+      `这一盘已经换新，从总库 ${destinationPool.length} 个国内目的地里重新抽了 ${Math.min(
+        WHEEL_DESTINATION_COUNT,
+        destinationPool.length,
+      )} 个。`,
+    )
+  }
+
   function handleSpin() {
-    if (isStopping || destinations.length === 0) {
+    if (isStopping || wheelDestinations.length === 0) {
       return
     }
 
     if (isSpinning) {
       const liveRotation = getLiveRotation()
-      const nextIndex = pickDestinationIndex(destinations.length)
-      const result = destinations[nextIndex]
+      const nextIndex = pickDestinationIndex(wheelDestinations.length)
+      const result = wheelDestinations[nextIndex]
       const nextRotation = calculateWheelRotation({
-        count: destinations.length,
+        count: wheelDestinations.length,
         selectedIndex: nextIndex,
         previousRotation: liveRotation,
         spins: 3,
@@ -200,7 +278,7 @@ function App() {
       setIsSpinning(false)
       setIsStopping(false)
       setRotation(liveRotation)
-      setStatusMessage('手已经按下了，看看它会不会刚好停在你们都想去的地方。')
+      setStatusMessage('这一盘开始减速了，看看它最后会把你们送去哪一站。')
 
       stopFrameRef.current = window.requestAnimationFrame(() => {
         stopFrameRef.current = window.requestAnimationFrame(() => {
@@ -228,9 +306,8 @@ function App() {
     spinStartedAtRef.current = Date.now()
     setIsSpinning(true)
     setIsStopping(false)
-    setSelectedDestinationId(null)
-    setConfirmedDestinationId(null)
-    setStatusMessage('转盘已经转起来了，想停的时候由你们亲手按下。')
+    clearSelection()
+    setStatusMessage('这一盘已经转起来了，想停的时候由你们亲手按下。')
   }
 
   function handleConfirmDestination() {
@@ -240,7 +317,7 @@ function App() {
 
     setConfirmedDestinationId(selectedDestination.id)
     setStatusMessage(
-      `下一站先记成 ${selectedDestination.name}，剩下的留给你们慢慢兑现。`,
+      `下一站先记成 ${selectedDestination.name}，这次就别只停留在“以后再说”。`,
     )
   }
 
@@ -249,29 +326,55 @@ function App() {
       ...destination,
       id: createDestinationId(),
     }
+    const nextPool = [...destinationPool, nextDestination]
 
-    setDestinations((current) => [...current, nextDestination])
-    setStatusMessage(`${nextDestination.name} 已加入转盘，今晚的想象又多了一格。`)
+    setDestinationPool(nextPool)
+    setWheelDestinationIds(
+      arrangeWheelIds(
+        nextPool,
+        promoteDestinationToWheel(
+          wheelDestinationIds,
+          nextDestination.id,
+          WHEEL_DESTINATION_COUNT,
+        ),
+      ),
+    )
+    clearSelection()
+    setRotation(0)
+    setStatusMessage(
+      `${nextDestination.name} 已加入总库，并被直接塞进了当前这一盘。`,
+    )
   }
 
   function handleUpdateDestination(updatedDestination) {
-    setDestinations((current) =>
-      current.map((destination) =>
-        destination.id === updatedDestination.id
-          ? { ...updatedDestination }
-          : destination,
-      ),
+    const nextPool = destinationPool.map((destination) =>
+      destination.id === updatedDestination.id
+        ? { ...updatedDestination }
+        : destination,
     )
-    setStatusMessage(`${updatedDestination.name} 已更新，画面感更具体了。`)
+
+    setDestinationPool(nextPool)
+    setStatusMessage(`${updatedDestination.name} 已更新，当前这一盘的内容也同步刷新了。`)
   }
 
   function handleDeleteDestination(destinationId) {
-    const removedDestination = destinations.find(
+    const removedDestination = destinationPool.find(
       (destination) => destination.id === destinationId,
     )
+    const nextPool = destinationPool.filter(
+      (destination) => destination.id !== destinationId,
+    )
 
-    setDestinations((current) =>
-      current.filter((destination) => destination.id !== destinationId),
+    setDestinationPool(nextPool)
+    setWheelDestinationIds(
+      arrangeWheelIds(
+        nextPool,
+        reconcileWheelDestinationIds(
+          nextPool,
+          wheelDestinationIds.filter((id) => id !== destinationId),
+          WHEEL_DESTINATION_COUNT,
+        ),
+      ),
     )
 
     if (selectedDestinationId === destinationId) {
@@ -284,8 +387,8 @@ function App() {
 
     setStatusMessage(
       removedDestination
-        ? `${removedDestination.name} 先从转盘退场，给别的心动留一点位置。`
-        : '这个地点已经从转盘里移除。',
+        ? `${removedDestination.name} 已从总库移除，转盘会自动补上新的候选。`
+        : '这个地点已经从总库里移除。',
     )
   }
 
@@ -293,13 +396,23 @@ function App() {
     clearSettleTimer()
     clearStopFrame()
     resetDestinationsStorage()
-    setDestinations(cloneDestinations(DEFAULT_DESTINATIONS))
-    setSelectedDestinationId(null)
-    setConfirmedDestinationId(null)
+
+    const nextPool = cloneDestinations(DEFAULT_DESTINATION_POOL)
+    const defaultCityPool = getDefaultCityDestinations(nextPool)
+
+    setDestinationPool(nextPool)
+    setWheelDestinationIds(
+      mapWheelIdsFromPool(
+        defaultCityPool.length >= WHEEL_DESTINATION_COUNT
+          ? defaultCityPool
+          : nextPool,
+      ),
+    )
+    clearSelection()
     setRotation(0)
     setIsSpinning(false)
     setIsStopping(false)
-    setStatusMessage('默认心动地点已恢复，转盘重新满电。')
+    setStatusMessage('500+ 国内目的地总库已恢复，转盘也换上了一整盘新候选。')
   }
 
   return (
@@ -310,7 +423,8 @@ function App() {
 
       <div className="app-container">
         <Hero
-          destinationCount={destinations.length}
+          poolCount={destinationPool.length}
+          wheelCount={wheelDestinations.length}
           onStart={handleScrollToWheel}
         />
 
@@ -318,11 +432,13 @@ function App() {
           <section className="main-grid" ref={wheelSectionRef}>
             <WheelGame
               confirmedDestination={confirmedDestination}
-              destinations={destinations}
+              destinations={wheelDestinations}
               isSpinning={isSpinning}
               isStopping={isStopping}
+              onRotateWheel={handleRotateWheelDestinations}
               onSpin={handleSpin}
               onToggleSound={() => setSoundEnabled((current) => !current)}
+              poolCount={destinationPool.length}
               rotation={rotation}
               selectedDestination={selectedDestination}
               spinCycleMs={MANUAL_SPIN_CYCLE_MS}
@@ -333,7 +449,7 @@ function App() {
             <ResultCard
               canSpin={
                 ((!isSpinning && !isStopping) || isSpinning) &&
-                destinations.length > 0
+                wheelDestinations.length > 0
               }
               confirmedDestination={confirmedDestination}
               destination={selectedDestination}
@@ -345,17 +461,21 @@ function App() {
           </section>
 
           <DestinationEditor
-            destinations={destinations}
+            destinations={wheelDestinations}
             disabled={isSpinning || isStopping}
             onAddDestination={handleAddDestination}
             onDeleteDestination={handleDeleteDestination}
             onResetDestinations={handleResetDestinations}
             onUpdateDestination={handleUpdateDestination}
+            poolCount={destinationPool.length}
+            wheelCount={wheelDestinations.length}
           />
         </main>
 
         <footer className="footer-note">
-          <p>旅行还没出发，气氛可以先到场。转盘结果只保存在当前浏览器里。</p>
+          <p>
+            当前总库已内置 500+ 个国内目的地。每次“换一盘”都会重新抽出一整盘候选。
+          </p>
         </footer>
       </div>
     </div>

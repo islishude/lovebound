@@ -1,11 +1,12 @@
-export function Hero({ destinationCount, onStart }) {
+export function Hero({ poolCount, wheelCount, onStart }) {
   return (
     <header className="hero-panel panel">
       <div className="hero-copy">
         <p className="eyebrow">Couple Trip Roulette</p>
         <h1>把下一次出走，交给一点认真又暧昧的随机。</h1>
         <p className="hero-text">
-          当“以后去哪里”总被日程推迟，不如先把心动转出来。今晚先抽一座城市，再给彼此一条像约定一样的小任务。
+          当“以后去哪里”总被日程推迟，不如先把心动转出来。总库里已经备好 500+
+          个国内目的地，每次只上盘一小轮，让选择保留惊喜，也不至于眼花。
         </p>
 
         <div className="hero-actions">
@@ -21,8 +22,8 @@ export function Hero({ destinationCount, onStart }) {
       <div className="hero-aside">
         <div className="hero-card">
           <p className="eyebrow">今晚库存</p>
-          <strong>{destinationCount}</strong>
-          <span>个可转的心动目的地</span>
+          <strong>{poolCount}</strong>
+          <span>个总库目的地，当前这一盘展示 {wheelCount} 个</span>
         </div>
 
         <ul className="hero-tag-list" aria-label="玩法亮点">
