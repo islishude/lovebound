@@ -1,3 +1,8 @@
+export const MANUAL_SPIN_CYCLE_MS = 800
+export const MANUAL_STOP_DURATION_MS = 2600
+export const MANUAL_SPIN_DEGREES_PER_SECOND =
+  (360 * 1000) / MANUAL_SPIN_CYCLE_MS
+
 export function normalizeRotation(rotation) {
   return ((rotation % 360) + 360) % 360
 }

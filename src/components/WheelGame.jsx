@@ -18,12 +18,15 @@ export function WheelGame({
   confirmedDestination,
   destinations,
   isSpinning,
+  isStopping,
   onSpin,
   onToggleSound,
   rotation,
   selectedDestination,
+  spinCycleMs,
   soundEnabled,
   statusMessage,
+  stopDurationMs,
 }) {
   const segmentAngle = destinations.length > 0 ? 360 / destinations.length : 0
   const wheelBackground = createWheelBackground(destinations)
@@ -51,9 +54,12 @@ export function WheelGame({
           <div className="wheel-pointer" aria-hidden="true"></div>
 
           <div
-            className={`wheel ${destinations.length === 0 ? 'is-empty' : ''}`}
+            className={`wheel ${destinations.length === 0 ? 'is-empty' : ''} ${isSpinning ? 'is-spinning' : ''} ${isStopping ? 'is-stopping' : ''}`}
             style={{
               background: wheelBackground,
+              '--rotation-offset': `${rotation}deg`,
+              '--spin-cycle': `${spinCycleMs}ms`,
+              '--stop-duration': `${stopDurationMs}ms`,
               transform: `rotate(${rotation}deg)`,
             }}
           >
@@ -80,10 +86,12 @@ export function WheelGame({
               type="button"
               className="spin-button"
               onClick={onSpin}
-              disabled={isSpinning || destinations.length === 0}
+              disabled={isStopping || destinations.length === 0}
             >
-              <strong>{isSpinning ? '转动中' : '开始'}</strong>
-              <span>{isSpinning ? 'Feeling It' : 'Spin Now'}</span>
+              <strong>{isStopping ? '停靠中' : isSpinning ? '停下' : '开始'}</strong>
+              <span>
+                {isStopping ? 'Almost There' : isSpinning ? 'Stop Here' : 'Spin Now'}
+              </span>
             </button>
           </div>
         </div>

@@ -10,9 +10,13 @@ import {
   resetDestinationsStorage,
   saveDestinations,
 } from './utils/storage'
-import { calculateWheelRotation, pickDestinationIndex } from './utils/wheel'
-
-const SPIN_DURATION_MS = 5200
+import {
+  MANUAL_SPIN_CYCLE_MS,
+  MANUAL_SPIN_DEGREES_PER_SECOND,
+  MANUAL_STOP_DURATION_MS,
+  calculateWheelRotation,
+  pickDestinationIndex,
+} from './utils/wheel'
 
 function cloneDestinations(destinations) {
   return destinations.map((destination) => ({ ...destination }))
@@ -74,6 +78,7 @@ function App() {
     cloneDestinations(loadDestinations(DEFAULT_DESTINATIONS)),
   )
   const [isSpinning, setIsSpinning] = useState(false)
+  const [isStopping, setIsStopping] = useState(false)
   const [selectedDestinationId, setSelectedDestinationId] = useState(null)
   const [confirmedDestinationId, setConfirmedDestinationId] = useState(null)
   const [rotation, setRotation] = useState(0)
@@ -83,8 +88,11 @@ function App() {
   )
 
   const wheelSectionRef = useRef(null)
-  const spinTimerRef = useRef(null)
+  const settleTimerRef = useRef(null)
   const audioContextRef = useRef(null)
+  const stopFrameRef = useRef(null)
+  const spinStartedAtRef = useRef(0)
+  const spinBaseRotationRef = useRef(0)
 
   useEffect(() => {
     saveDestinations(destinations)
@@ -92,8 +100,12 @@ function App() {
 
   useEffect(() => {
     return () => {
-      if (spinTimerRef.current) {
-        window.clearTimeout(spinTimerRef.current)
+      if (settleTimerRef.current) {
+        window.clearTimeout(settleTimerRef.current)
+      }
+
+      if (stopFrameRef.current) {
+        window.cancelAnimationFrame(stopFrameRef.current)
       }
 
       if (audioContextRef.current) {
@@ -109,11 +121,30 @@ function App() {
     destinations.find((destination) => destination.id === confirmedDestinationId) ??
     null
 
-  function clearSpinTimer() {
-    if (spinTimerRef.current) {
-      window.clearTimeout(spinTimerRef.current)
-      spinTimerRef.current = null
+  function clearSettleTimer() {
+    if (settleTimerRef.current) {
+      window.clearTimeout(settleTimerRef.current)
+      settleTimerRef.current = null
     }
+  }
+
+  function clearStopFrame() {
+    if (stopFrameRef.current) {
+      window.cancelAnimationFrame(stopFrameRef.current)
+      stopFrameRef.current = null
+    }
+  }
+
+  function getLiveRotation() {
+    if (!isSpinning) {
+      return rotation
+    }
+
+    const elapsedMs = Date.now() - spinStartedAtRef.current
+    return (
+      spinBaseRotationRef.current +
+      (elapsedMs / 1000) * MANUAL_SPIN_DEGREES_PER_SECOND
+    )
   }
 
   function getAudioContext() {
@@ -149,35 +180,57 @@ function App() {
   }
 
   function handleSpin() {
-    if (isSpinning || destinations.length === 0) {
+    if (isStopping || destinations.length === 0) {
       return
     }
 
-    clearSpinTimer()
+    if (isSpinning) {
+      const liveRotation = getLiveRotation()
+      const nextIndex = pickDestinationIndex(destinations.length)
+      const result = destinations[nextIndex]
+      const nextRotation = calculateWheelRotation({
+        count: destinations.length,
+        selectedIndex: nextIndex,
+        previousRotation: liveRotation,
+        spins: 3,
+      })
 
-    const nextIndex = pickDestinationIndex(destinations.length)
-    const nextRotation = calculateWheelRotation({
-      count: destinations.length,
-      selectedIndex: nextIndex,
-      previousRotation: rotation,
-      spins: 7,
-    })
+      clearSettleTimer()
+      clearStopFrame()
+      setIsSpinning(false)
+      setIsStopping(false)
+      setRotation(liveRotation)
+      setStatusMessage('手已经按下了，看看它会不会刚好停在你们都想去的地方。')
 
+      stopFrameRef.current = window.requestAnimationFrame(() => {
+        stopFrameRef.current = window.requestAnimationFrame(() => {
+          setIsStopping(true)
+          setRotation(nextRotation)
+
+          settleTimerRef.current = window.setTimeout(() => {
+            setSelectedDestinationId(result.id)
+            setIsStopping(false)
+            setStatusMessage(`${result.name} 落在指针下，像一封刚好送达的邀请。`)
+            playResultSound()
+            settleTimerRef.current = null
+          }, MANUAL_STOP_DURATION_MS)
+
+          stopFrameRef.current = null
+        })
+      })
+
+      return
+    }
+
+    clearSettleTimer()
+    clearStopFrame()
+    spinBaseRotationRef.current = rotation
+    spinStartedAtRef.current = Date.now()
     setIsSpinning(true)
+    setIsStopping(false)
     setSelectedDestinationId(null)
     setConfirmedDestinationId(null)
-    setStatusMessage('转盘正在替你们酝酿下一次靠近，先别急着理性。')
-    setRotation(nextRotation)
-
-    spinTimerRef.current = window.setTimeout(() => {
-      const result = destinations[nextIndex]
-
-      setSelectedDestinationId(result.id)
-      setIsSpinning(false)
-      setStatusMessage(`${result.name} 落在指针下，像一封刚好送达的邀请。`)
-      playResultSound()
-      spinTimerRef.current = null
-    }, SPIN_DURATION_MS)
+    setStatusMessage('转盘已经转起来了，想停的时候由你们亲手按下。')
   }
 
   function handleConfirmDestination() {
@@ -237,13 +290,15 @@ function App() {
   }
 
   function handleResetDestinations() {
-    clearSpinTimer()
+    clearSettleTimer()
+    clearStopFrame()
     resetDestinationsStorage()
     setDestinations(cloneDestinations(DEFAULT_DESTINATIONS))
     setSelectedDestinationId(null)
     setConfirmedDestinationId(null)
     setRotation(0)
     setIsSpinning(false)
+    setIsStopping(false)
     setStatusMessage('默认心动地点已恢复，转盘重新满电。')
   }
 
@@ -265,18 +320,25 @@ function App() {
               confirmedDestination={confirmedDestination}
               destinations={destinations}
               isSpinning={isSpinning}
+              isStopping={isStopping}
               onSpin={handleSpin}
               onToggleSound={() => setSoundEnabled((current) => !current)}
               rotation={rotation}
               selectedDestination={selectedDestination}
+              spinCycleMs={MANUAL_SPIN_CYCLE_MS}
               soundEnabled={soundEnabled}
               statusMessage={statusMessage}
+              stopDurationMs={MANUAL_STOP_DURATION_MS}
             />
             <ResultCard
-              canSpin={!isSpinning && destinations.length > 0}
+              canSpin={
+                ((!isSpinning && !isStopping) || isSpinning) &&
+                destinations.length > 0
+              }
               confirmedDestination={confirmedDestination}
               destination={selectedDestination}
               isSpinning={isSpinning}
+              isStopping={isStopping}
               onConfirm={handleConfirmDestination}
               onSpin={handleSpin}
             />
@@ -284,7 +346,7 @@ function App() {
 
           <DestinationEditor
             destinations={destinations}
-            disabled={isSpinning}
+            disabled={isSpinning || isStopping}
             onAddDestination={handleAddDestination}
             onDeleteDestination={handleDeleteDestination}
             onResetDestinations={handleResetDestinations}

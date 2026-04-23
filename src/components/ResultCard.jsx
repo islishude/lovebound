@@ -3,6 +3,7 @@ export function ResultCard({
   confirmedDestination,
   destination,
   isSpinning,
+  isStopping,
   onConfirm,
   onSpin,
 }) {
@@ -55,9 +56,9 @@ export function ResultCard({
                 type="button"
                 className="secondary-button"
                 onClick={onSpin}
-                disabled={!canSpin}
+                disabled={!canSpin || isStopping}
               >
-                {isSpinning ? '转盘转动中' : '再心动一次'}
+                {isStopping ? '停靠中' : isSpinning ? '停在这里' : '再心动一次'}
               </button>
             </div>
           </>
@@ -72,9 +73,9 @@ export function ResultCard({
                 type="button"
                 className="primary-button"
                 onClick={onSpin}
-                disabled={!canSpin}
+                disabled={!canSpin || isStopping}
               >
-                {isSpinning ? '转盘转动中' : '替我们选一个'}
+                {isStopping ? '停靠中' : isSpinning ? '停在这里' : '替我们选一个'}
               </button>
             </div>
           </>
