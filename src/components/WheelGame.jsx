@@ -19,14 +19,8 @@ function splitWheelLabel(name) {
     return [name]
   }
 
-  const chunkSize = name.length <= 8 ? 4 : 3
-  const chunks = []
-
-  for (let index = 0; index < name.length; index += chunkSize) {
-    chunks.push(name.slice(index, index + chunkSize))
-  }
-
-  return chunks.slice(0, 3)
+  const midpoint = Math.ceil(name.length / 2)
+  return [name.slice(0, midpoint), name.slice(midpoint)].filter(Boolean)
 }
 
 export function WheelGame({
@@ -74,6 +68,7 @@ export function WheelGame({
             className={`wheel-face ${isSpinning ? 'is-spinning' : ''} ${isStopping ? 'is-stopping' : ''}`}
             style={{
               '--rotation-offset': `${rotation}deg`,
+              '--label-counter-rotation': `${-rotation}deg`,
               '--spin-cycle': `${spinCycleMs}ms`,
               '--stop-duration': `${stopDurationMs}ms`,
               transform: `rotate(${rotation}deg)`,
@@ -89,15 +84,17 @@ export function WheelGame({
             <div className="wheel-label-layer">
               {destinations.map((destination, index) => {
                 const angle = segmentAngle * index + segmentAngle / 2
+                const radians = (angle * Math.PI) / 180
                 const labelLines = splitWheelLabel(destination.name)
+                const labelRadius = destinations.length >= 12 ? 35 : 34
 
                 return (
                   <span
                     key={destination.id}
                     className="wheel-label"
                     style={{
-                      '--label-angle': `${angle}deg`,
-                      '--reverse-angle': `${-angle}deg`,
+                      '--label-x': `${Math.sin(radians) * labelRadius}%`,
+                      '--label-y': `${-Math.cos(radians) * labelRadius}%`,
                     }}
                     title={destination.name}
                   >
