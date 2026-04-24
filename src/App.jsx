@@ -102,16 +102,44 @@ function arrangeWheelIds(pool, destinationIds) {
   return arrangedDestinations.map((destination) => destination.id)
 }
 
-function mapWheelIdsFromPool(pool, currentIds = []) {
+function mapWheelIdsFromPool(pool, currentIds = [], options = {}) {
   const pickedDestinations = pickNextWheelDestinations(
     pool,
     WHEEL_DESTINATION_COUNT,
     currentIds,
+    Math.random,
+    options,
   )
 
   return arrangeWheelDestinations(pickedDestinations).map(
     (destination) => destination.id,
   )
+}
+
+function getDestinationNamesByIds(pool, destinationIds) {
+  return destinationIds
+    .map((destinationId) =>
+      pool.find((destination) => destination.id === destinationId),
+    )
+    .filter(Boolean)
+    .map((destination) => destination.name)
+}
+
+function pickWheelResultIndex(destinations, excludedDestinationId) {
+  if (destinations.length === 0) {
+    return -1
+  }
+
+  const availableIndexes = destinations
+    .map((destination, index) => ({ destination, index }))
+    .filter(({ destination }) => destination.id !== excludedDestinationId)
+    .map(({ index }) => index)
+
+  if (availableIndexes.length === 0) {
+    return pickDestinationIndex(destinations.length)
+  }
+
+  return availableIndexes[pickDestinationIndex(availableIndexes.length)]
 }
 
 function App() {
@@ -132,6 +160,7 @@ function App() {
   const [isStopping, setIsStopping] = useState(false)
   const [selectedDestinationId, setSelectedDestinationId] = useState(null)
   const [confirmedDestinationId, setConfirmedDestinationId] = useState(null)
+  const [lastResultId, setLastResultId] = useState(null)
   const [rotation, setRotation] = useState(0)
   const [soundEnabled, setSoundEnabled] = useState(false)
   const [statusMessage, setStatusMessage] = useState(
@@ -246,7 +275,18 @@ function App() {
       return
     }
 
-    setWheelDestinationIds(mapWheelIdsFromPool(destinationPool, wheelDestinationIds))
+    const excludedResultIds = [
+      lastResultId,
+      selectedDestinationId,
+      confirmedDestinationId,
+    ].filter(Boolean)
+
+    setWheelDestinationIds(
+      mapWheelIdsFromPool(destinationPool, wheelDestinationIds, {
+        excludeIds: excludedResultIds,
+        excludeNames: getDestinationNamesByIds(destinationPool, excludedResultIds),
+      }),
+    )
     clearSelection()
     setRotation(0)
     setStatusMessage(
@@ -264,7 +304,7 @@ function App() {
 
     if (isSpinning) {
       const liveRotation = getLiveRotation()
-      const nextIndex = pickDestinationIndex(wheelDestinations.length)
+      const nextIndex = pickWheelResultIndex(wheelDestinations, lastResultId)
       const result = wheelDestinations[nextIndex]
       const nextRotation = calculateWheelRotation({
         count: wheelDestinations.length,
@@ -287,6 +327,7 @@ function App() {
 
           settleTimerRef.current = window.setTimeout(() => {
             setSelectedDestinationId(result.id)
+            setLastResultId(result.id)
             setIsStopping(false)
             setStatusMessage(`${result.name} 落在指针下，像一封刚好送达的邀请。`)
             playResultSound()
@@ -385,6 +426,10 @@ function App() {
       setConfirmedDestinationId(null)
     }
 
+    if (lastResultId === destinationId) {
+      setLastResultId(null)
+    }
+
     setStatusMessage(
       removedDestination
         ? `${removedDestination.name} 已从总库移除，转盘会自动补上新的候选。`
@@ -409,6 +454,7 @@ function App() {
       ),
     )
     clearSelection()
+    setLastResultId(null)
     setRotation(0)
     setIsSpinning(false)
     setIsStopping(false)

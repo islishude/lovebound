@@ -39,6 +39,35 @@ describe('destination pool utils', () => {
     expect(picked.map((destination) => destination.id)).toEqual(['d', 'e', 'a'])
   })
 
+  it('excludes the previous result by id and display name when possible', () => {
+    const picked = pickNextWheelDestinations(
+      DESTINATIONS,
+      2,
+      ['a'],
+      () => 0,
+      {
+        excludeIds: ['b'],
+        excludeNames: ['D'],
+      },
+    )
+
+    expect(picked.map((destination) => destination.id)).toEqual(['c', 'e'])
+  })
+
+  it('relaxes name exclusions before repeating current wheel ids', () => {
+    const picked = pickNextWheelDestinations(
+      DESTINATIONS,
+      3,
+      ['a', 'b', 'c'],
+      () => 0,
+      {
+        excludeNames: ['D'],
+      },
+    )
+
+    expect(picked.map((destination) => destination.id)).toEqual(['e', 'd', 'a'])
+  })
+
   it('reconciles deleted wheel ids and refills the wheel', () => {
     const nextIds = reconcileWheelDestinationIds(
       DESTINATIONS.filter((destination) => destination.id !== 'b'),

@@ -76,11 +76,18 @@ export function pickNextWheelDestinations(
   count,
   currentIds = [],
   random = Math.random,
+  options = {},
 ) {
   const limit = Math.min(count, destinations.length)
-  const currentIdSet = new Set(currentIds)
+  const excludedIdSet = new Set([
+    ...currentIds,
+    ...(options.excludeIds ?? []),
+  ])
+  const excludedNameSet = new Set(options.excludeNames ?? [])
   const freshPool = destinations.filter(
-    (destination) => !currentIdSet.has(destination.id),
+    (destination) =>
+      !excludedIdSet.has(destination.id) &&
+      !excludedNameSet.has(destination.name),
   )
   const results = drawRandomItems(freshPool, limit, random)
 
@@ -89,6 +96,23 @@ export function pickNextWheelDestinations(
   }
 
   const usedIds = new Set(results.map((destination) => destination.id))
+  const relaxedNamePool = destinations.filter(
+    (destination) =>
+      !usedIds.has(destination.id) && !excludedIdSet.has(destination.id),
+  )
+  const relaxedResults = drawRandomItems(
+    relaxedNamePool,
+    limit - results.length,
+    random,
+  )
+
+  results.push(...relaxedResults)
+
+  if (results.length === limit) {
+    return results
+  }
+
+  relaxedResults.forEach((destination) => usedIds.add(destination.id))
   const fallbackPool = destinations.filter(
     (destination) => !usedIds.has(destination.id),
   )

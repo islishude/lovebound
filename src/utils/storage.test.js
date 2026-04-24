@@ -43,10 +43,10 @@ describe('storage utils', () => {
     )
   })
 
-  it('returns stored destinations when payload is valid', () => {
+  it('merges stored destinations with fallback additions when payload is valid', () => {
     const storedDestinations = [
       {
-        id: 'stored',
+        id: 'fallback',
         name: '厦门',
         tagline: 'stored',
         mood: 'stored',
@@ -62,6 +62,28 @@ describe('storage utils', () => {
     expect(loadDestinations(FALLBACK_DESTINATIONS, storage)).toEqual(
       storedDestinations,
     )
+  })
+
+  it('keeps stored custom destinations and appends missing built-in entries', () => {
+    const storedDestinations = [
+      {
+        id: 'custom',
+        name: '成都',
+        tagline: 'custom',
+        mood: 'custom',
+        reason: 'custom',
+        coupleTask: 'custom',
+        color: '#000000',
+      },
+    ]
+    const storage = createStorage({
+      [DESTINATIONS_STORAGE_KEY]: JSON.stringify(storedDestinations),
+    })
+
+    expect(loadDestinations(FALLBACK_DESTINATIONS, storage)).toEqual([
+      ...storedDestinations,
+      ...FALLBACK_DESTINATIONS,
+    ])
   })
 
   it('falls back when storage payload is malformed', () => {

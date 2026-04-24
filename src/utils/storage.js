@@ -34,6 +34,17 @@ function isDestinationArray(value) {
   return Array.isArray(value) && value.every(isDestination)
 }
 
+function mergeDestinationsWithFallback(storedDestinations, fallbackDestinations) {
+  const storedDestinationIds = new Set(
+    storedDestinations.map((destination) => destination.id),
+  )
+  const fallbackAdditions = fallbackDestinations.filter(
+    (destination) => !storedDestinationIds.has(destination.id),
+  )
+
+  return [...storedDestinations, ...fallbackAdditions]
+}
+
 export function loadDestinations(fallback, storage) {
   const activeStorage = getStorage(storage)
 
@@ -49,7 +60,9 @@ export function loadDestinations(fallback, storage) {
     }
 
     const parsedValue = JSON.parse(rawValue)
-    return isDestinationArray(parsedValue) ? parsedValue : fallback
+    return isDestinationArray(parsedValue)
+      ? mergeDestinationsWithFallback(parsedValue, fallback)
+      : fallback
   } catch {
     return fallback
   }
