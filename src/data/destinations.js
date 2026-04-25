@@ -150,6 +150,83 @@ const CATEGORY_PRESETS = {
   },
 }
 
+const TARGET_COPY_OPTION_COUNT = 5
+
+const CATEGORY_PRESET_COPY_EXPANSIONS = {
+  city: {
+    reasons: [
+      '{name} 的可塑性强，适合根据当天状态临时调整，累了就坐下吃饭，有兴致就多走一段街。',
+      '这种目的地不靠单个大景点取胜，更适合把真实街区、晚饭和散步组合成一趟轻旅行。',
+      '把 {name} 放进转盘，是为了给两个人一个低负担出发理由，不用准备太久也能成行。',
+    ],
+    tasks: [
+      '用十分钟各自搜一个想去的小店或街区，最后选一个距离更近的先出发。',
+      '在路上各自拍一个最像 {name} 的生活细节，晚上互相解释为什么选它。',
+      '晚饭后散步到下一条路口，再一起决定要继续逛、找饮料，还是直接回去休息。',
+    ],
+  },
+  water: {
+    reasons: [
+      '水边目的地天然适合慢节奏安排，白天看景，傍晚散步，夜里再把聊天接上。',
+      '{name} 的记忆点不只在风景本身，也在两个人愿意一起停下来发呆的那段时间。',
+      '把这里作为目的地，可以把旅行从赶路切到放松，适合留出一整段不被打扰的并肩时间。',
+    ],
+    tasks: [
+      '一起找一处能听见水声的位置，安静坐满三分钟后再说话。',
+      '各自拍一张水面、天空或岸边细节，晚上拼成一张只有你们懂的旅行小卡。',
+      '沿水边走到下一个转弯处，途中每个人说一个最近想慢下来的生活瞬间。',
+    ],
+  },
+  mountain: {
+    reasons: [
+      '{name} 的高处视野适合制造一次明显的抽离感，让两个人从日常里暂时出来。',
+      '山野目的地会把行程变得更有共同完成感，哪怕只走一小段路也有参与感。',
+      '这里适合把体力和风景都控制在舒服范围内，认真看一段路，比匆忙打卡更值得。',
+    ],
+    tasks: [
+      '出发前一起选一段难度最低但风景好的路线，把“轻松走完”当成今天目标。',
+      '在路上各自找一个喜欢的自然声音，回程时告诉对方自己听见了什么。',
+      '到达视野开阔处时合照一张，并约定这张照片只配一句很短的标题。',
+    ],
+  },
+  ancient: {
+    reasons: [
+      '{name} 的人文氛围适合边看边聊，很多细节会自然变成两个人的话题。',
+      '旧街和古建能让旅行慢下来，不需要强行制造浪漫，灯火和路面本身就有情绪。',
+      '把这里安排成约会目的地，适合用一段街巷、一顿饭和一个夜景收住整天。',
+    ],
+    tasks: [
+      '在老街里各自选一个最喜欢的门牌、屋檐或灯笼，拍下来给对方看。',
+      '找一家老店或茶馆坐下，每个人讲一个刚刚路上最想记住的画面。',
+      '离开前回头拍一张街景，给它写一句像明信片背面的短句。',
+    ],
+  },
+  grassland: {
+    reasons: [
+      '{name} 的开阔感适合把日常压力拉远一点，行程简单反而更能进入状态。',
+      '旷野型目的地最适合共享同一段风、云和长路，让旅行变得不那么拥挤。',
+      '这里的重点不是完成多少点位，而是让两个人一起看见比日常更远的地方。',
+    ],
+    tasks: [
+      '一起面向最开阔的方向站一分钟，然后各自说一个想一起去到的远方。',
+      '给今天的风景选一首歌，作为这趟假想旅行的背景音乐。',
+      '拍一张只有天空、路和背影的照片，不露脸也要能认出彼此。',
+    ],
+  },
+  desert: {
+    reasons: [
+      '荒野和落日会天然放大旅途的仪式感，适合两个人一起经历一点不常见的风景。',
+      '{name} 的画面感强，哪怕安排得简单，也容易留下很清晰的共同记忆。',
+      '这种目的地适合少量点位加长时间停留，把光线、风和路途真正留进旅行里。',
+    ],
+    tasks: [
+      '等光线变软时互拍一张背影照，只用天空、地面和人的比例讲故事。',
+      '一起给这趟旅行想一个像电影名的标题，必须包含风、光或路其中一个字。',
+      '到达最想停留的位置后不急着拍照，先一起看完整一分钟风景。',
+    ],
+  },
+}
+
 const CITY_PRESETS = {
   coastal: {
     moods: ['海风慢逛', '港湾约会', '海岸日落', '轻盐散步'],
@@ -755,6 +832,177 @@ const CITY_COPY_OVERRIDES = {
   },
 }
 
+const CITY_PRESET_COPY_EXPANSIONS = {
+  coastal: {
+    reasons: [
+      '{name} 这类海滨城市很适合把约会拆成老街、海边和晚饭三段，节奏清楚但不紧。',
+      '靠海城市的好处是情绪切换快，白天逛街区，傍晚走到水边就能自然放松。',
+      '把 {name} 放进计划，可以用海风和一顿本地饭把短途旅行做得很有假期感。',
+    ],
+    tasks: [
+      '傍晚前找到一条能走向海边的路，沿路给对方拍三张不摆拍的照片。',
+      '一起点一份当地海鲜或海边小吃，给它评一个“下次还会不会来”的分数。',
+      '看海时各自说一个想被海风带走的小烦恼，说完就不再继续讨论。',
+    ],
+  },
+  island: {
+    reasons: [
+      '{name} 的旅行优势是直接进入休假状态，适合少安排、多睡醒后再决定。',
+      '热带海边目的地适合把约会做得轻，海湾、冰饮和晚风已经足够撑起一天。',
+      '把 {name} 作为目的地，可以让两个人从日常节奏里快速抽离，真正恢复一点电量。',
+    ],
+    tasks: [
+      '一起选一个最想偷懒的时段，明确那段时间不赶景点也不做决定。',
+      '买一份热带水果或冰饮，边吃边互相拍一张最像度假的照片。',
+      '在沙滩或海湾边写下明天最想做的一件小事，只能写轻松的。',
+    ],
+  },
+  canalGarden: {
+    reasons: [
+      '{name} 这类江南城市的细节密度高，适合慢慢走，越不赶越有约会感。',
+      '园林、水巷和老街能自然拉低行程强度，让聊天和拍照都不显得刻意。',
+      '把 {name} 安排成周末短逃，可以用一条河道、一份点心和一段夜路串起记忆。',
+    ],
+    tasks: [
+      '找一家茶馆或点心店坐下，每个人说一个刚刚路上最喜欢的江南细节。',
+      '沿水巷走到下一座桥，互相拍一张不看镜头的照片。',
+      '给今天遇到的一座桥或一面墙取名字，名字要像一部老电影。',
+    ],
+  },
+  historic: {
+    reasons: [
+      '{name} 的历史线索会让约会更有内容，哪怕只是走路也能不断产生共同话题。',
+      '古都型城市适合白天看厚重的东西，晚上用小吃和灯火把气氛放轻。',
+      '把 {name} 放进清单，是为了让旅行既有看点，也有两个人慢慢消化的余地。',
+    ],
+    tasks: [
+      '各自选一个最想查清楚的历史细节，晚饭时用一分钟讲给对方听。',
+      '在老城路上找一个最有年代感的背景，拍一张像旧照片的合照。',
+      '晚饭后散步十分钟，只聊今天看到的城市细节，不聊工作和琐事。',
+    ],
+  },
+  food: {
+    reasons: [
+      '{name} 这种烟火气城市不需要复杂攻略，把路线按饭点排就很容易成立。',
+      '美食型目的地的参与感很强，点菜、排队、试味道都会自然变成共同记忆。',
+      '把 {name} 安排成短途旅行，最实际的收益是一整天都不缺话题和下一站。',
+    ],
+    tasks: [
+      '每个人选一道没吃过的本地食物，必须互相交换第一口评价。',
+      '晚饭后散步十五分钟再决定要不要吃第二摊，不能刚出店就打车。',
+      '给今天最喜欢的一口食物起一个只有你们懂的昵称。',
+    ],
+  },
+  mountainGateway: {
+    reasons: [
+      '{name} 适合把城市便利和自然风景接起来，不用硬核徒步也能有出走感。',
+      '山水门户城市的弹性很高，能根据体力选择轻徒步、观景台或只在城里休整。',
+      '把 {name} 放进目的地池，是为了让两个人有一次从城市走向开阔风景的机会。',
+    ],
+    tasks: [
+      '一起选一段最轻松的风景路线，把“走舒服”排在“走完所有点”前面。',
+      '在风景最开阔处各自拍一张对方背影，晚饭时互相选封面。',
+      '路上找一处能停下来的地方，给未来一次更远的旅行定一个候选方向。',
+    ],
+  },
+  karst: {
+    reasons: [
+      '{name} 的山水层次适合慢慢看，急着换点位反而会削弱旅行感。',
+      '喀斯特和河谷风景自带画面，适合用轻行程换取更稳定的放松感。',
+      '把 {name} 安排进旅行，可以让两个人在城市烟火和自然山水之间自然切换。',
+    ],
+    tasks: [
+      '找一处能看见山水层次的地方，互相描述照片里最像这座城市的部分。',
+      '一起点一份当地米粉或酸辣小吃，把它写进你们的旅行评分表。',
+      '沿河或山边走一小段，途中每个人负责发现一个适合停留的机位。',
+    ],
+  },
+  grassland: {
+    reasons: [
+      '{name} 这类草原边境城市更需要完整时间，少换点位才能真正进入风景。',
+      '开阔地貌会把两个人的注意力从琐事里拉出来，适合共享一段很大的安静。',
+      '把 {name} 放进目的地池，是为了留一次看长路、云影和日落的共同经历。',
+    ],
+    tasks: [
+      '选一个视野最远的位置站定，每个人说一个想一起抵达的地方。',
+      '给这趟草原或边境想象选一首歌，晚上把它设成今日背景音乐。',
+      '拍一张长路或天空照片，只用一句话说明为什么它像你们此刻的关系。',
+    ],
+  },
+  plateau: {
+    reasons: [
+      '{name} 这类高原城市需要克制安排，慢下来反而更能让旅行有重量。',
+      '高原的光线、空气和距离感都很特别，适合两个人认真共享安静时间。',
+      '把 {name} 作为目的地，是为了给旅行留出足够缓冲，也给彼此留出真正放慢的机会。',
+    ],
+    tasks: [
+      '找一处阳光好的地方坐满十分钟，期间只聊轻松的事。',
+      '各自拍一张天空、远山或路面细节，晚上拼成一张高原明信片。',
+      '一起把明天行程删掉一个不必要的点位，把省下来的时间留给发呆。',
+    ],
+  },
+  desertOasis: {
+    reasons: [
+      '{name} 这类西北城市的反差感强，城市烟火和辽阔地貌都能成为记忆点。',
+      '丝路、戈壁、绿洲和夜市会把旅行变得很具体，适合两个人一起打开地图。',
+      '把 {name} 放进计划，是为了用更远的路、更大的天空和更实在的饭换一次新鲜感。',
+    ],
+    tasks: [
+      '一起点一份当地面食或烤物，边吃边选一个最想继续向西的下一站。',
+      '傍晚找一面被光照到的墙或一段街景，给对方拍一张电影感照片。',
+      '打开地图各自选一个听起来最远的地名，说说为什么被它吸引。',
+    ],
+  },
+  snowNorth: {
+    reasons: [
+      '{name} 这类北方城市季节感明显，冷风、热饭和宽街会让短途旅行更有记忆点。',
+      '东北城市的烟火气很直给，适合用一顿饭、一段街和一场夜风组成约会。',
+      '把 {name} 放进目的地池，是为了体验室外清冷和室内热乎之间的反差。',
+    ],
+    tasks: [
+      '在最有北方街景的一段路上拍照，进店后互相选出更像明信片的一张。',
+      '点一道适合分享的当地菜，每个人负责给对方夹一次最想推荐的部分。',
+      '饭后走到下一个路口再打车，把这段冷风里的路当成今天收尾。',
+    ],
+  },
+  modern: {
+    reasons: [
+      '{name} 的优势是选择多、切换快，很适合临时决定一个展馆、公园或新街区。',
+      '现代城市适合做轻计划约会，不需要远行，也能靠新场景制造新鲜感。',
+      '把 {name} 当作周末目的地，可以低成本换一种日常节奏，晚上再用夜景收尾。',
+    ],
+    tasks: [
+      '每个人各选一个展馆、公园、书店或新餐厅，用最近距离决定先去哪里。',
+      '晚上找一处城市灯光，给对方拍一张“今天下班后也很值得”的照片。',
+      '一起试一条没走过的街区路线，路上只能进一家临时看中的店。',
+    ],
+  },
+  craftCulture: {
+    reasons: [
+      '{name} 这类手艺和人文城市适合慢慢看，器物、老店和街景都会变成话题。',
+      '文化型目的地不只是拍照，还适合一起挑选、试做或带走一点有来历的东西。',
+      '把 {name} 放进行程，可以让旅行更有参与感，留下的不只是照片。',
+    ],
+    tasks: [
+      '一起挑一件小器物或地方小吃，分别说出它最像这座城市的地方。',
+      '找一家手作店、茶馆或老店坐下，给对方选一个最适合带走的小纪念。',
+      '各自拍一个最喜欢的纹理、招牌或器物细节，晚上拼成一张城市素材卡。',
+    ],
+  },
+  river: {
+    reasons: [
+      '{name} 这类江河城市适合顺着水走，桥、码头和夜风能自然把节奏放慢。',
+      '水边城市能同时容纳热闹和安静，白天看街区，晚上到江边就能换气。',
+      '把 {name} 作为短途选择，可以用一段沿水散步把整天的行程收得很舒服。',
+    ],
+    tasks: [
+      '沿江或沿湖走到下一盏路灯，每个人说一个最近想被对方知道的小愿望。',
+      '在桥边拍一张合照，要求照片里必须有水面或灯影。',
+      '晚饭后找一段水边路慢慢走，走完再一起决定今天的最后一站。',
+    ],
+  },
+}
+
 const CITY_PRESET_RULES = [
   {
     preset: 'grassland',
@@ -869,6 +1117,26 @@ function fillTemplate(template, name) {
   return template.replace(/\s*\{name\}\s*/g, name)
 }
 
+function mergeCopyOptions(primaryItems, fallbackItems) {
+  return [...primaryItems, ...fallbackItems].slice(0, TARGET_COPY_OPTION_COUNT)
+}
+
+function expandPresetCopy(preset, expansion = {}) {
+  return {
+    ...preset,
+    reasons: mergeCopyOptions(preset.reasons, expansion.reasons ?? []),
+    tasks: mergeCopyOptions(preset.tasks, expansion.tasks ?? []),
+  }
+}
+
+function mergePresetWithFallbackCopy(preset, fallbackPreset) {
+  return {
+    ...preset,
+    reasons: mergeCopyOptions(preset.reasons, fallbackPreset.reasons),
+    tasks: mergeCopyOptions(preset.tasks, fallbackPreset.tasks),
+  }
+}
+
 function shortenCityName(name) {
   let nextName = name
 
@@ -909,18 +1177,46 @@ function cityMatchesRule(rule, cityName, city) {
   return hasMatchingName || hasMatchingProvince
 }
 
-function detectCityPreset(cityName, city) {
-  const override = CITY_COPY_OVERRIDES[cityName]
-
-  if (override) {
-    return override
-  }
-
+function detectCityPresetRule(cityName, city) {
   const rule = CITY_PRESET_RULES.find((candidate) =>
     cityMatchesRule(candidate, cityName, city),
   )
 
-  return rule ? CITY_PRESETS[rule.preset] : CATEGORY_PRESETS.city
+  return rule
+}
+
+function getCityFallbackPreset(cityName, city) {
+  const rule = detectCityPresetRule(cityName, city)
+
+  if (!rule) {
+    return expandPresetCopy(
+      CATEGORY_PRESETS.city,
+      CATEGORY_PRESET_COPY_EXPANSIONS.city,
+    )
+  }
+
+  return expandPresetCopy(
+    CITY_PRESETS[rule.preset],
+    CITY_PRESET_COPY_EXPANSIONS[rule.preset],
+  )
+}
+
+function detectCityPreset(cityName, city) {
+  const fallbackPreset = getCityFallbackPreset(cityName, city)
+  const override = CITY_COPY_OVERRIDES[cityName]
+
+  return override
+    ? mergePresetWithFallbackCopy(override, fallbackPreset)
+    : fallbackPreset
+}
+
+function detectScenicPreset(name) {
+  const category = detectScenicCategory(name)
+
+  return expandPresetCopy(
+    CATEGORY_PRESETS[category],
+    CATEGORY_PRESET_COPY_EXPANSIONS[category],
+  )
 }
 
 function createDestination({ id, name, source, city }) {
@@ -929,7 +1225,7 @@ function createDestination({ id, name, source, city }) {
   const preset =
     source === 'city'
       ? detectCityPreset(destinationName, city)
-      : CATEGORY_PRESETS[detectScenicCategory(name)]
+      : detectScenicPreset(name)
 
   return {
     id,

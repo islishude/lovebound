@@ -1,5 +1,5 @@
 export const DESTINATIONS_STORAGE_KEY = 'lovebound.destinations'
-export const DESTINATIONS_COPY_VERSION = '2026-04-city-copy-v2'
+export const DESTINATIONS_COPY_VERSION = '2026-04-city-copy-v3'
 export const DESTINATIONS_COPY_VERSION_KEY =
   'lovebound.destinations-copy-version'
 
