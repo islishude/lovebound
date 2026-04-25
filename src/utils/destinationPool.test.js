@@ -2,17 +2,16 @@ import { describe, expect, it } from 'vitest'
 import {
   arrangeWheelDestinations,
   countAdjacentColorMatches,
+  filterDestinationsByPreference,
   pickNextWheelDestinations,
-  promoteDestinationToWheel,
-  reconcileWheelDestinationIds,
 } from './destinationPool'
 
 const DESTINATIONS = [
-  { id: 'a', name: 'A' },
-  { id: 'b', name: 'B' },
-  { id: 'c', name: 'C' },
-  { id: 'd', name: 'D' },
-  { id: 'e', name: 'E' },
+  { id: 'a', name: 'A', preferenceCategory: 'city' },
+  { id: 'b', name: 'B', preferenceCategory: 'food' },
+  { id: 'c', name: 'C', preferenceCategory: 'water' },
+  { id: 'd', name: 'D', preferenceCategory: 'mountain' },
+  { id: 'e', name: 'E', preferenceCategory: 'water' },
 ]
 
 describe('destination pool utils', () => {
@@ -68,25 +67,6 @@ describe('destination pool utils', () => {
     expect(picked.map((destination) => destination.id)).toEqual(['e', 'd', 'a'])
   })
 
-  it('reconciles deleted wheel ids and refills the wheel', () => {
-    const nextIds = reconcileWheelDestinationIds(
-      DESTINATIONS.filter((destination) => destination.id !== 'b'),
-      ['a', 'b', 'c'],
-      3,
-      () => 0.1,
-    )
-
-    expect(nextIds).toEqual(['a', 'c', 'd'])
-  })
-
-  it('promotes a destination to the front of the wheel', () => {
-    expect(promoteDestinationToWheel(['b', 'c', 'd'], 'e', 3)).toEqual([
-      'e',
-      'b',
-      'c',
-    ])
-  })
-
   it('reorders wheel destinations to avoid adjacent identical colors when possible', () => {
     const colorfulDestinations = [
       { id: 'a', color: '#111111' },
@@ -103,5 +83,19 @@ describe('destination pool utils', () => {
     const arranged = arrangeWheelDestinations(colorfulDestinations, nextRandom)
 
     expect(countAdjacentColorMatches(arranged)).toBe(0)
+  })
+
+  it('filters destinations by selected preference category union', () => {
+    expect(filterDestinationsByPreference(DESTINATIONS, [])).toEqual(DESTINATIONS)
+    expect(
+      filterDestinationsByPreference(DESTINATIONS, ['water']).map(
+        (destination) => destination.id,
+      ),
+    ).toEqual(['c', 'e'])
+    expect(
+      filterDestinationsByPreference(DESTINATIONS, ['food', 'mountain']).map(
+        (destination) => destination.id,
+      ),
+    ).toEqual(['b', 'd'])
   })
 })

@@ -24,16 +24,22 @@ function splitWheelLabel(name) {
 }
 
 export function WheelGame({
+  activePoolCount,
   confirmedDestination,
   destinations,
   isSpinning,
   isStopping,
+  onClearPreferenceCategories,
   onRotateWheel,
   onSpin,
   onToggleSound,
+  onTogglePreferenceCategory,
   poolCount,
+  preferenceCategories,
+  preferencesDisabled,
   rotation,
   selectedDestination,
+  selectedPreferenceCategories,
   spinCycleMs,
   soundEnabled,
   statusMessage,
@@ -41,6 +47,7 @@ export function WheelGame({
 }) {
   const segmentAngle = destinations.length > 0 ? 360 / destinations.length : 0
   const wheelBackground = createWheelBackground(destinations)
+  const selectedPreferenceCategorySet = new Set(selectedPreferenceCategories)
 
   return (
     <section className="wheel-panel panel" aria-labelledby="wheel-title">
@@ -130,47 +137,93 @@ export function WheelGame({
         <div className="wheel-meta">
           <div className="chip-row" aria-label="转盘状态">
             <span className="chip">总库 {poolCount} 个目的地</span>
+            <span className="chip">匹配 {activePoolCount} 个</span>
             <span className="chip">当前这一盘 {destinations.length} 个</span>
-            <span className="chip">结果卡即时生成</span>
-            <span className="chip">点击可整盘轮换</span>
           </div>
 
-          <div className="status-banner" aria-live="polite">
-            <strong>当前气氛：</strong>
-            {statusMessage}
+          <div className="preference-filter" aria-labelledby="preference-title">
+            <div className="preference-filter-head">
+              <strong id="preference-title">旅行偏好</strong>
+              <span>
+                {selectedPreferenceCategories.length === 0
+                  ? '全部目的地'
+                  : `${selectedPreferenceCategories.length} 个偏好已选`}
+              </span>
+            </div>
+
+            <div className="preference-chip-row">
+              <button
+                type="button"
+                className={`preference-chip ${
+                  selectedPreferenceCategories.length === 0 ? 'is-active' : ''
+                }`}
+                onClick={onClearPreferenceCategories}
+                disabled={preferencesDisabled}
+                aria-pressed={selectedPreferenceCategories.length === 0}
+              >
+                全部
+              </button>
+
+              {preferenceCategories.map((category) => {
+                const isActive = selectedPreferenceCategorySet.has(category.id)
+
+                return (
+                  <button
+                    type="button"
+                    className={`preference-chip ${isActive ? 'is-active' : ''}`}
+                    onClick={() => onTogglePreferenceCategory(category.id)}
+                    disabled={preferencesDisabled}
+                    aria-pressed={isActive}
+                    key={category.id}
+                  >
+                    {category.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
-          <div className="action-row">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={onRotateWheel}
-              disabled={isSpinning || isStopping || poolCount === 0}
-            >
-              换一盘目的地
-            </button>
+          <div className="wheel-control-stack">
+            <div className="status-banner" aria-live="polite">
+              <strong>当前气氛：</strong>
+              {statusMessage}
+            </div>
+
+            <div className="action-row">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={onRotateWheel}
+                disabled={isSpinning || isStopping || activePoolCount === 0}
+              >
+                换一盘目的地
+              </button>
+            </div>
+
+            {selectedDestination ? (
+              <div className="wheel-hit">
+                <strong>{selectedDestination.name}</strong>
+                <p>{selectedDestination.tagline}</p>
+              </div>
+            ) : (
+              <div className="helper-card">
+                <p>
+                  {activePoolCount === 0
+                    ? '当前偏好下没有候选，清空偏好或换一组偏好。'
+                    : '指针停下之前，一切都只是你们还没来得及承认的偏爱。'}
+                </p>
+              </div>
+            )}
+
+            {confirmedDestination && (
+              <div className="confirmed-note">
+                <p>
+                  已经把 <strong>{confirmedDestination.name}</strong>{' '}
+                  记成当前下一站。
+                </p>
+              </div>
+            )}
           </div>
-
-          {selectedDestination ? (
-            <div className="wheel-hit">
-              <strong>{selectedDestination.name}</strong>
-              <p>{selectedDestination.tagline}</p>
-            </div>
-          ) : (
-            <div className="helper-card">
-              <p>
-                指针停下之前，一切都只是你们还没来得及承认的偏爱。
-              </p>
-            </div>
-          )}
-
-          {confirmedDestination && (
-            <div className="confirmed-note">
-              <p>
-                已经把 <strong>{confirmedDestination.name}</strong> 记成当前下一站。
-              </p>
-            </div>
-          )}
         </div>
       </div>
     </section>

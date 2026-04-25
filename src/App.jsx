@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
-import { DestinationEditor } from './components/DestinationEditor'
+import { CandidatePanel } from './components/CandidatePanel'
 import { Hero } from './components/Hero'
 import { ResultCard } from './components/ResultCard'
 import { WheelGame } from './components/WheelGame'
@@ -9,15 +9,13 @@ import {
   WHEEL_DESTINATION_COUNT,
 } from './data/destinations'
 import {
-  loadDestinations,
-  resetDestinationsStorage,
-  saveDestinations,
-} from './utils/storage'
+  PREFERENCE_CATEGORIES,
+  getPreferenceCategoryLabel,
+} from './data/preferences'
 import {
   arrangeWheelDestinations,
+  filterDestinationsByPreference,
   pickNextWheelDestinations,
-  promoteDestinationToWheel,
-  reconcileWheelDestinationIds,
 } from './utils/destinationPool'
 import {
   MANUAL_SPIN_CYCLE_MS,
@@ -26,18 +24,6 @@ import {
   calculateWheelRotation,
   pickDestinationIndex,
 } from './utils/wheel'
-
-function cloneDestinations(destinations) {
-  return destinations.map((destination) => ({ ...destination }))
-}
-
-function createDestinationId() {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-
-  return `destination-${Date.now()}-${Math.random().toString(16).slice(2)}`
-}
 
 function createAudioContext() {
   if (typeof window === 'undefined') {
@@ -82,24 +68,22 @@ function playRomanceChime(audioContext) {
   })
 }
 
-function getInitialDestinationPool() {
-  return cloneDestinations(loadDestinations(DEFAULT_DESTINATION_POOL))
+function getPreferenceLabel(selectedPreferenceCategories) {
+  if (selectedPreferenceCategories.length === 0) {
+    return '全部偏好'
+  }
+
+  return selectedPreferenceCategories.map(getPreferenceCategoryLabel).join('、')
 }
 
-function getDefaultCityDestinations(pool) {
-  return pool.filter((destination) => destination.id.startsWith('city-'))
-}
+function getPreferenceStatusMessage(selectedPreferenceCategories, poolCount) {
+  const preferenceLabel = getPreferenceLabel(selectedPreferenceCategories)
 
-function arrangeWheelIds(pool, destinationIds) {
-  const arrangedDestinations = arrangeWheelDestinations(
-    destinationIds
-      .map((destinationId) =>
-        pool.find((destination) => destination.id === destinationId),
-      )
-      .filter(Boolean),
-  )
+  if (poolCount === 0) {
+    return `当前偏好「${preferenceLabel}」下没有候选，清空偏好或换一组偏好。`
+  }
 
-  return arrangedDestinations.map((destination) => destination.id)
+  return `偏好已切到「${preferenceLabel}」，从 ${poolCount} 个匹配目的地里抽出今晚这一盘。`
 }
 
 function mapWheelIdsFromPool(pool, currentIds = [], options = {}) {
@@ -143,18 +127,11 @@ function pickWheelResultIndex(destinations, excludedDestinationId) {
 }
 
 function App() {
-  const [destinationPool, setDestinationPool] = useState(getInitialDestinationPool)
+  const destinationPool = DEFAULT_DESTINATION_POOL
+  const [selectedPreferenceCategories, setSelectedPreferenceCategories] =
+    useState([])
   const [wheelDestinationIds, setWheelDestinationIds] = useState(() =>
-    {
-      const initialPool = getInitialDestinationPool()
-      const defaultCityPool = getDefaultCityDestinations(initialPool)
-
-      return mapWheelIdsFromPool(
-        defaultCityPool.length >= WHEEL_DESTINATION_COUNT
-          ? defaultCityPool
-          : initialPool,
-      )
-    },
+    mapWheelIdsFromPool(DEFAULT_DESTINATION_POOL),
   )
   const [isSpinning, setIsSpinning] = useState(false)
   const [isStopping, setIsStopping] = useState(false)
@@ -175,10 +152,6 @@ function App() {
   const spinBaseRotationRef = useRef(0)
 
   useEffect(() => {
-    saveDestinations(destinationPool)
-  }, [destinationPool])
-
-  useEffect(() => {
     return () => {
       if (settleTimerRef.current) {
         window.clearTimeout(settleTimerRef.current)
@@ -194,9 +167,16 @@ function App() {
     }
   }, [])
 
+  const activeDestinationPool = filterDestinationsByPreference(
+    destinationPool,
+    selectedPreferenceCategories,
+  )
+
   const wheelDestinations = wheelDestinationIds
     .map((destinationId) =>
-      destinationPool.find((destination) => destination.id === destinationId),
+      activeDestinationPool.find(
+        (destination) => destination.id === destinationId,
+      ),
     )
     .filter(Boolean)
 
@@ -270,8 +250,53 @@ function App() {
     })
   }
 
+  function applyPreferenceSelection(nextSelectedPreferenceCategories) {
+    if (isSpinning || isStopping) {
+      return
+    }
+
+    clearSettleTimer()
+    clearStopFrame()
+
+    const nextPreferencePool = filterDestinationsByPreference(
+      destinationPool,
+      nextSelectedPreferenceCategories,
+    )
+
+    setSelectedPreferenceCategories(nextSelectedPreferenceCategories)
+    setWheelDestinationIds(mapWheelIdsFromPool(nextPreferencePool))
+    clearSelection()
+    setLastResultId(null)
+    setRotation(0)
+    setStatusMessage(
+      getPreferenceStatusMessage(
+        nextSelectedPreferenceCategories,
+        nextPreferencePool.length,
+      ),
+    )
+  }
+
+  function handleTogglePreferenceCategory(preferenceCategory) {
+    const nextSelectedPreferenceCategories =
+      selectedPreferenceCategories.includes(preferenceCategory)
+        ? selectedPreferenceCategories.filter(
+            (category) => category !== preferenceCategory,
+          )
+        : [...selectedPreferenceCategories, preferenceCategory]
+
+    applyPreferenceSelection(nextSelectedPreferenceCategories)
+  }
+
+  function handleClearPreferenceCategories() {
+    if (selectedPreferenceCategories.length === 0) {
+      return
+    }
+
+    applyPreferenceSelection([])
+  }
+
   function handleRotateWheelDestinations() {
-    if (isSpinning || isStopping || destinationPool.length === 0) {
+    if (isSpinning || isStopping || activeDestinationPool.length === 0) {
       return
     }
 
@@ -282,17 +307,22 @@ function App() {
     ].filter(Boolean)
 
     setWheelDestinationIds(
-      mapWheelIdsFromPool(destinationPool, wheelDestinationIds, {
+      mapWheelIdsFromPool(activeDestinationPool, wheelDestinationIds, {
         excludeIds: excludedResultIds,
-        excludeNames: getDestinationNamesByIds(destinationPool, excludedResultIds),
+        excludeNames: getDestinationNamesByIds(
+          activeDestinationPool,
+          excludedResultIds,
+        ),
       }),
     )
     clearSelection()
     setRotation(0)
     setStatusMessage(
-      `这一盘已经换新，从总库 ${destinationPool.length} 个国内目的地里重新抽了 ${Math.min(
+      `这一盘已经换新，按「${getPreferenceLabel(
+        selectedPreferenceCategories,
+      )}」从 ${activeDestinationPool.length} 个匹配目的地里重新抽了 ${Math.min(
         WHEEL_DESTINATION_COUNT,
-        destinationPool.length,
+        activeDestinationPool.length,
       )} 个。`,
     )
   }
@@ -362,105 +392,6 @@ function App() {
     )
   }
 
-  function handleAddDestination(destination) {
-    const nextDestination = {
-      ...destination,
-      id: createDestinationId(),
-    }
-    const nextPool = [...destinationPool, nextDestination]
-
-    setDestinationPool(nextPool)
-    setWheelDestinationIds(
-      arrangeWheelIds(
-        nextPool,
-        promoteDestinationToWheel(
-          wheelDestinationIds,
-          nextDestination.id,
-          WHEEL_DESTINATION_COUNT,
-        ),
-      ),
-    )
-    clearSelection()
-    setRotation(0)
-    setStatusMessage(
-      `${nextDestination.name} 已加入总库，并被直接塞进了当前这一盘。`,
-    )
-  }
-
-  function handleUpdateDestination(updatedDestination) {
-    const nextPool = destinationPool.map((destination) =>
-      destination.id === updatedDestination.id
-        ? { ...updatedDestination }
-        : destination,
-    )
-
-    setDestinationPool(nextPool)
-    setStatusMessage(`${updatedDestination.name} 已更新，当前这一盘的内容也同步刷新了。`)
-  }
-
-  function handleDeleteDestination(destinationId) {
-    const removedDestination = destinationPool.find(
-      (destination) => destination.id === destinationId,
-    )
-    const nextPool = destinationPool.filter(
-      (destination) => destination.id !== destinationId,
-    )
-
-    setDestinationPool(nextPool)
-    setWheelDestinationIds(
-      arrangeWheelIds(
-        nextPool,
-        reconcileWheelDestinationIds(
-          nextPool,
-          wheelDestinationIds.filter((id) => id !== destinationId),
-          WHEEL_DESTINATION_COUNT,
-        ),
-      ),
-    )
-
-    if (selectedDestinationId === destinationId) {
-      setSelectedDestinationId(null)
-    }
-
-    if (confirmedDestinationId === destinationId) {
-      setConfirmedDestinationId(null)
-    }
-
-    if (lastResultId === destinationId) {
-      setLastResultId(null)
-    }
-
-    setStatusMessage(
-      removedDestination
-        ? `${removedDestination.name} 已从总库移除，转盘会自动补上新的候选。`
-        : '这个地点已经从总库里移除。',
-    )
-  }
-
-  function handleResetDestinations() {
-    clearSettleTimer()
-    clearStopFrame()
-    resetDestinationsStorage()
-
-    const nextPool = cloneDestinations(DEFAULT_DESTINATION_POOL)
-    const defaultCityPool = getDefaultCityDestinations(nextPool)
-
-    setDestinationPool(nextPool)
-    setWheelDestinationIds(
-      mapWheelIdsFromPool(
-        defaultCityPool.length >= WHEEL_DESTINATION_COUNT
-          ? defaultCityPool
-          : nextPool,
-      ),
-    )
-    clearSelection()
-    setLastResultId(null)
-    setRotation(0)
-    setIsSpinning(false)
-    setIsStopping(false)
-    setStatusMessage('500+ 国内目的地总库已恢复，转盘也换上了一整盘新候选。')
-  }
-
   return (
     <div className="app-shell">
       <div className="ambient ambient-one" aria-hidden="true"></div>
@@ -477,16 +408,22 @@ function App() {
         <main className="app-main">
           <section className="main-grid" ref={wheelSectionRef}>
             <WheelGame
+              activePoolCount={activeDestinationPool.length}
               confirmedDestination={confirmedDestination}
               destinations={wheelDestinations}
               isSpinning={isSpinning}
               isStopping={isStopping}
+              onClearPreferenceCategories={handleClearPreferenceCategories}
               onRotateWheel={handleRotateWheelDestinations}
               onSpin={handleSpin}
               onToggleSound={() => setSoundEnabled((current) => !current)}
+              onTogglePreferenceCategory={handleTogglePreferenceCategory}
               poolCount={destinationPool.length}
+              preferenceCategories={PREFERENCE_CATEGORIES}
+              preferencesDisabled={isSpinning || isStopping}
               rotation={rotation}
               selectedDestination={selectedDestination}
+              selectedPreferenceCategories={selectedPreferenceCategories}
               spinCycleMs={MANUAL_SPIN_CYCLE_MS}
               soundEnabled={soundEnabled}
               statusMessage={statusMessage}
@@ -506,15 +443,11 @@ function App() {
             />
           </section>
 
-          <DestinationEditor
+          <CandidatePanel
             destinations={wheelDestinations}
-            disabled={isSpinning || isStopping}
-            onAddDestination={handleAddDestination}
-            onDeleteDestination={handleDeleteDestination}
-            onResetDestinations={handleResetDestinations}
-            onUpdateDestination={handleUpdateDestination}
+            activePoolCount={activeDestinationPool.length}
             poolCount={destinationPool.length}
-            wheelCount={wheelDestinations.length}
+            preferenceLabel={getPreferenceLabel(selectedPreferenceCategories)}
           />
         </main>
 

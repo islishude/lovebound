@@ -1,3 +1,5 @@
+import { getPreferenceCategoryLabel } from '../data/preferences'
+
 export function ResultCard({
   canSpin,
   confirmedDestination,
@@ -28,6 +30,9 @@ export function ResultCard({
           <>
             <div className="pill-row">
               <span className="pill">{destination.mood}</span>
+              <span className="pill category-pill">
+                {getPreferenceCategoryLabel(destination.preferenceCategory)}
+              </span>
               <span className="pill">适合两个人慢慢靠近</span>
             </div>
 

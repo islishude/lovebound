@@ -32,16 +32,16 @@ export function Hero({ poolCount, wheelCount, onStart }) {
             文案有点撩，但不过界。
           </li>
           <li className="hero-tag">
-            <strong>可自定义</strong>
-            把你们真正会去的地方加进来。
+            <strong>偏好筛选</strong>
+            八种旅行倾向，可以单选也可以混搭。
           </li>
           <li className="hero-tag">
-            <strong>本地保存</strong>
-            刷新页面也不会把地点弄丢。
+            <strong>候选预览</strong>
+            开转前先看清今晚这一盘。
           </li>
           <li className="hero-tag">
-            <strong>手机友好</strong>
-            躺着也能把下一站转出来。
+            <strong>直接开转</strong>
+            不用维护清单，把选择交给转盘。
           </li>
         </ul>
       </div>

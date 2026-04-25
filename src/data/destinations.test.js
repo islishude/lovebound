@@ -3,6 +3,7 @@ import {
   DEFAULT_DESTINATION_POOL,
   WHEEL_DESTINATION_COUNT,
 } from './destinations'
+import { PREFERENCE_CATEGORIES } from './preferences'
 
 function getDestinationCopy(name) {
   const destination = DEFAULT_DESTINATION_POOL.find((item) => item.name === name)
@@ -30,6 +31,24 @@ describe('destination data', () => {
 
   it('uses a wheel size smaller than the destination pool', () => {
     expect(WHEEL_DESTINATION_COUNT).toBeLessThan(DEFAULT_DESTINATION_POOL.length)
+  })
+
+  it('assigns every default destination to one of the preference categories', () => {
+    const categoryIds = new Set(PREFERENCE_CATEGORIES.map((category) => category.id))
+
+    expect(
+      DEFAULT_DESTINATION_POOL.every((destination) =>
+        categoryIds.has(destination.preferenceCategory),
+      ),
+    ).toBe(true)
+
+    PREFERENCE_CATEGORIES.forEach((category) => {
+      expect(
+        DEFAULT_DESTINATION_POOL.some(
+          (destination) => destination.preferenceCategory === category.id,
+        ),
+      ).toBe(true)
+    })
   })
 
   it('uses place-aware copy for representative city destinations', () => {

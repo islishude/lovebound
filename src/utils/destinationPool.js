@@ -1,3 +1,5 @@
+import { isPreferenceCategory } from '../data/preferences'
+
 function drawRandomItems(items, count, random = Math.random) {
   const pool = [...items]
   const results = []
@@ -24,6 +26,23 @@ function shuffleItems(items, random = Math.random) {
   }
 
   return nextItems
+}
+
+export function filterDestinationsByPreference(
+  destinations,
+  selectedPreferenceCategories = [],
+) {
+  const selectedCategorySet = new Set(
+    selectedPreferenceCategories.filter(isPreferenceCategory),
+  )
+
+  if (selectedCategorySet.size === 0) {
+    return destinations
+  }
+
+  return destinations.filter((destination) =>
+    selectedCategorySet.has(destination.preferenceCategory),
+  )
 }
 
 export function countAdjacentColorMatches(destinations) {
@@ -121,36 +140,4 @@ export function pickNextWheelDestinations(
     ...results,
     ...drawRandomItems(fallbackPool, limit - results.length, random),
   ]
-}
-
-export function reconcileWheelDestinationIds(
-  destinations,
-  currentIds,
-  count,
-  random = Math.random,
-) {
-  const limit = Math.min(count, destinations.length)
-  const validIds = new Set(destinations.map((destination) => destination.id))
-  const keptIds = currentIds.filter((id) => validIds.has(id)).slice(0, limit)
-
-  if (keptIds.length === limit) {
-    return keptIds
-  }
-
-  const keptIdSet = new Set(keptIds)
-  const fillerDestinations = pickNextWheelDestinations(
-    destinations.filter((destination) => !keptIdSet.has(destination.id)),
-    limit - keptIds.length,
-    [],
-    random,
-  )
-
-  return [...keptIds, ...fillerDestinations.map((destination) => destination.id)]
-}
-
-export function promoteDestinationToWheel(currentIds, destinationId, count) {
-  return [destinationId, ...currentIds.filter((id) => id !== destinationId)].slice(
-    0,
-    count,
-  )
 }
