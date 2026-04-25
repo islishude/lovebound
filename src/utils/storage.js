@@ -1,4 +1,7 @@
-export const DESTINATIONS_STORAGE_KEY = 'travel-select.destinations'
+export const DESTINATIONS_STORAGE_KEY = 'lovebound.destinations'
+export const DESTINATIONS_COPY_VERSION = '2026-04-city-copy-v2'
+export const DESTINATIONS_COPY_VERSION_KEY =
+  'lovebound.destinations-copy-version'
 
 const REQUIRED_FIELDS = [
   'id',
@@ -34,15 +37,35 @@ function isDestinationArray(value) {
   return Array.isArray(value) && value.every(isDestination)
 }
 
-function mergeDestinationsWithFallback(storedDestinations, fallbackDestinations) {
+function rememberDestinationsCopyVersion(storage) {
+  try {
+    storage.setItem(DESTINATIONS_COPY_VERSION_KEY, DESTINATIONS_COPY_VERSION)
+  } catch {
+    // Destination data itself is more important than the migration marker.
+  }
+}
+
+function mergeDestinationsWithFallback(
+  storedDestinations,
+  fallbackDestinations,
+  shouldRefreshFallbackCopy = false,
+) {
+  const fallbackDestinationById = new Map(
+    fallbackDestinations.map((destination) => [destination.id, destination]),
+  )
+  const normalizedStoredDestinations = shouldRefreshFallbackCopy
+    ? storedDestinations.map(
+      (destination) => fallbackDestinationById.get(destination.id) ?? destination,
+    )
+    : storedDestinations
   const storedDestinationIds = new Set(
-    storedDestinations.map((destination) => destination.id),
+    normalizedStoredDestinations.map((destination) => destination.id),
   )
   const fallbackAdditions = fallbackDestinations.filter(
     (destination) => !storedDestinationIds.has(destination.id),
   )
 
-  return [...storedDestinations, ...fallbackAdditions]
+  return [...normalizedStoredDestinations, ...fallbackAdditions]
 }
 
 export function loadDestinations(fallback, storage) {
@@ -60,9 +83,23 @@ export function loadDestinations(fallback, storage) {
     }
 
     const parsedValue = JSON.parse(rawValue)
-    return isDestinationArray(parsedValue)
-      ? mergeDestinationsWithFallback(parsedValue, fallback)
-      : fallback
+    const shouldRefreshFallbackCopy =
+      activeStorage.getItem(DESTINATIONS_COPY_VERSION_KEY) !==
+      DESTINATIONS_COPY_VERSION
+
+    if (!isDestinationArray(parsedValue)) {
+      return fallback
+    }
+
+    const destinations = mergeDestinationsWithFallback(
+      parsedValue,
+      fallback,
+      shouldRefreshFallbackCopy,
+    )
+
+    rememberDestinationsCopyVersion(activeStorage)
+
+    return destinations
   } catch {
     return fallback
   }
@@ -79,6 +116,7 @@ export function saveDestinations(destinations, storage) {
     DESTINATIONS_STORAGE_KEY,
     JSON.stringify(destinations),
   )
+  rememberDestinationsCopyVersion(activeStorage)
 }
 
 export function resetDestinationsStorage(storage) {
@@ -89,4 +127,5 @@ export function resetDestinationsStorage(storage) {
   }
 
   activeStorage.removeItem(DESTINATIONS_STORAGE_KEY)
+  activeStorage.removeItem(DESTINATIONS_COPY_VERSION_KEY)
 }

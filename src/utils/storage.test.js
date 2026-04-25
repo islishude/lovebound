@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  DESTINATIONS_COPY_VERSION,
+  DESTINATIONS_COPY_VERSION_KEY,
   DESTINATIONS_STORAGE_KEY,
   loadDestinations,
   resetDestinationsStorage,
@@ -43,7 +45,7 @@ describe('storage utils', () => {
     )
   })
 
-  it('merges stored destinations with fallback additions when payload is valid', () => {
+  it('keeps stored destinations when copy version is current', () => {
     const storedDestinations = [
       {
         id: 'fallback',
@@ -56,11 +58,46 @@ describe('storage utils', () => {
       },
     ]
     const storage = createStorage({
+      [DESTINATIONS_COPY_VERSION_KEY]: DESTINATIONS_COPY_VERSION,
       [DESTINATIONS_STORAGE_KEY]: JSON.stringify(storedDestinations),
     })
 
     expect(loadDestinations(FALLBACK_DESTINATIONS, storage)).toEqual(
       storedDestinations,
+    )
+  })
+
+  it('refreshes stale built-in copy while keeping custom destinations', () => {
+    const storedDestinations = [
+      {
+        id: 'fallback',
+        name: '厦门',
+        tagline: 'stored',
+        mood: 'stored',
+        reason: 'stored',
+        coupleTask: 'stored',
+        color: '#000000',
+      },
+      {
+        id: 'custom',
+        name: '成都',
+        tagline: 'custom',
+        mood: 'custom',
+        reason: 'custom',
+        coupleTask: 'custom',
+        color: '#000000',
+      },
+    ]
+    const storage = createStorage({
+      [DESTINATIONS_STORAGE_KEY]: JSON.stringify(storedDestinations),
+    })
+
+    expect(loadDestinations(FALLBACK_DESTINATIONS, storage)).toEqual([
+      ...FALLBACK_DESTINATIONS,
+      storedDestinations[1],
+    ])
+    expect(storage.getItem(DESTINATIONS_COPY_VERSION_KEY)).toBe(
+      DESTINATIONS_COPY_VERSION,
     )
   })
 
@@ -119,5 +156,6 @@ describe('storage utils', () => {
     resetDestinationsStorage(storage)
 
     expect(storage.getItem(DESTINATIONS_STORAGE_KEY)).toBeNull()
+    expect(storage.getItem(DESTINATIONS_COPY_VERSION_KEY)).toBeNull()
   })
 })
